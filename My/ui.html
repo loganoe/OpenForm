@@ -4,13 +4,138 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flow v1</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         body {
             background-color: rgb(252, 247, 237); 
         }
+        #maintxtbox {
+            position: fixed; 
+            left: 50%;
+            transform: translateX(-50%); 
+            border-radius: 50px;
+            padding: 20px;
+            top: 80%; 
+            width: 20%; 
+            border: 1px solid black; 
+            transition: .3s; 
+            opacity: 0.6; 
+        }
+        #maintxtbox:hover {
+            width: 80%;
+            transition: .3s; 
+            opacity: 1; 
+        }
+        #maintxtbox:active {
+            width: 80%; 
+            transition: .3s; 
+            opacity: 1; 
+        }
+        #maintxtbox:focus {
+            width: 80%; 
+            transition: .3s; 
+            opacity: 1; 
+        }
+        #loader {
+            border: 16px solid #ffffff;
+  border-radius: 50%;
+  border-top: 16px solid #8b8b8b;
+  width: 120px;
+  height: 120px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+        }
+        #textContainer {
+            width: 80%;
+            line-height: 2; 
+            font-family: sans-serif; 
+        }
+        @-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.invis {
+    display: none; 
+}
+.vis {
+    display: block; 
+}
+#loader {
+    position: fixed; 
+            left: 45%;
+            top: 30%; 
+            transform: translateX(-50%); 
+
+}
     </style>
 </head>
 <body>
-    <input id="maintxtbox"></input> 
+    <center>
+    <div id="loader" class="invis">
+
+    </div>
+    <div id="textContainer">
+        
+    </div>
+    </center>
+    <input id="maintxtbox" placeholder="Ask Flow Anything" onkeydown="search(this)"></input> 
+    <script>
+             var socket = io();
+        function search(ele) {
+            if (event.key === 'Enter') {
+                socket.emit('request', document.getElementById('maintxtbox').value); 
+                loading(); 
+                document.getElementById("maintxtbox").value = ""; 
+            }
+        }
+        function loading() {
+            document.getElementById("loader").setAttribute("class", "vis");
+        }
+        function stopLoading() {
+            document.getElementById("loader").setAttribute('class', "invis"); 
+        }
+        socket.on('response', function(msg) {
+            stopLoading(); 
+            var thinking = extractTextBetweenSubstrings(msg, "<think>", "</think>"); 
+            const woah = document.createElement('h2');
+            woah.textContent = "Thoughts: ";
+            const thinkPara = document.createElement('p'); 
+            thinkPara.textContent = thinking; 
+            const wow = document.createElement("h2");
+            wow.textContent = "Response: ";
+            const paragraph = document.createElement('b'); 
+            var txt = "";
+            txt = msg.replace(thinking, ""); 
+            txt = txt.replace("<think>", "");
+            txt = txt.replace("</think>", ""); 
+            paragraph.textContent = txt; 
+
+            const parentElement = document.getElementById("textContainer"); 
+            parentElement.appendChild(woah); 
+            parentElement.appendChild(thinkPara); 
+            parentElement.appendChild(wow);
+            parentElement.appendChild(paragraph); 
+            paragraph.scrollIntoView();
+
+        });
+        function extractTextBetweenSubstrings(text, startMark, endMark) {
+    const startIndex = text.indexOf(startMark);
+    const endIndex = text.indexOf(endMark);
+
+    if (startIndex === -1 || endIndex === -1) {
+        return '';
+    }
+
+    const startAfter = startIndex + startMark.length;
+    const endBefore = endIndex;
+
+    return text.substring(startAfter, endBefore);
+}
+    </script>
 </body>
 </html>
