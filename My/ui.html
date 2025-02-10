@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flow v1</title>
+    <title>Argo v2.3</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         body {
@@ -71,25 +71,126 @@
             top: 30%; 
             transform: translateX(-50%); 
 
+        
+}
+#othertxt {
+    float: left; 
+
+}
+#outputh {
+    position: fixed; 
+    cursor: pointer;        
+            left: 90%;
+            transform: translateX(-50%); 
+            border-radius: 50px;
+            padding: 20px;
+            top: 80%; 
+            width: 10%; 
+            border: 1px solid rgb(242, 214, 255);  
+            transition: .2s; 
+            background-color:  rgb(252, 247, 237); 
+}
+#outputh:hover {
+    background-color: rgb(242, 214, 255);  
+    border: 1px solid black; 
+    transition: .2s; 
+    padding: 22px; 
+    width: 11%; 
 }
     </style>
 </head>
 <body>
-    <center>
+
     <div id="loader" class="invis">
 
     </div>
     <div id="textContainer">
-        
+        <div id="othertxt">
+
+        </div>
     </div>
-    </center>
-    <input id="maintxtbox" placeholder="Ask Flow Anything" onkeydown="search(this)"></input> 
+    <video id="video" width="640" height="480" autoplay></video>
+    <input id="maintxtbox" placeholder="Ask Argo Anything" onkeydown="search(this)"></input> 
+    <button id ="outputh">Start Voice Recognition</button>
     <script>
-             var socket = io();
-        function search(ele) {
-            if (event.key === 'Enter') {
-                socket.emit('request', document.getElementById('maintxtbox').value); 
+const startButton = document.getElementById('outputh');
+const outputDiv = document.getElementById('othertxt');
+function moveForward() { fetch('/forward'); }
+
+function moveLeft() { fetch('/left'); }
+
+function stopRobot() { fetch('/stop'); }
+
+function moveRight() { fetch('/right'); }
+
+function moveReverse() { fetch('/reverse'); }
+
+function moveUp() { fetch('/up'); }
+
+function stopArm() { fetch('/stoparm'); }
+
+function moveDown() { fetch('/down'); }
+function fetchDistanceAuto() {
+  return fetch('/distance')
+    .then(response => response.text())
+    .then(data => {
+      return data;  // Return the data directly
+    });
+}
+
+const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition || window.msSpeechRecognition)();
+recognition.lang = 'en-US';
+
+recognition.onstart = () => {
+    startButton.textContent = 'Listening...';
+};
+
+recognition.onresult = (event) => {
+    if (!isResponding && !isThinking) {
+    const transcript = event.results[0][0].transcript;
+    outputDiv.textContent = transcript;
+    if ((transcript.toLowerCase().includes("argo"))) {
+        var ask = transcript.toLowerCase().replace("argo", "");
+        console.log("User voice request: " + ask); 
+        if (!isResponding && !isThinking) {
+        window.speechSynthesis.cancel(); 
+        captureAndSend(document.getElementById("maintxtbox").value);
                 loading(); 
+                const parentElement = document.getElementById("othertxt");
+                const txt = document.createElement("b"); 
+                txt.textContent = document.getElementById("maintxtbox").value; 
+                txt.style.float = "right"; 
+                parentElement.appendChild(txt);
+                document.getElementById("maintxtbox").value = ""; 
+    }
+    }
+
+    }
+};
+
+recognition.onend = () => {
+    startButton.textContent = 'Start Voice Input';
+    startButton.click(); 
+};
+
+startButton.addEventListener('click', () => {
+    recognition.start();
+});
+
+             var socket = io('http://192.168.68.110:3000');
+        async function search(ele) {
+            if (event.key === 'Enter') {
+                window.speechSynthesis.cancel(); 
+
+                loading(); 
+                //var distance = await fetchDistanceAuto();
+                captureAndSend(document.getElementById("maintxtbox").value);
+                //  + "[DISTANCE: " + distance.toString() + ""
+                const parentElement = document.getElementById("othertxt");
+                const txt = document.createElement("b"); 
+                txt.textContent = document.getElementById("maintxtbox").value; 
+                txt.style.float = "right"; 
+                parentElement.appendChild(txt);
                 document.getElementById("maintxtbox").value = ""; 
             }
         }
@@ -99,28 +200,14 @@
         function stopLoading() {
             document.getElementById("loader").setAttribute('class', "invis"); 
         }
+        var isThinking = false;
+        var isResponding = false; 
+        var responseTxt = ""; 
+        var fullTxt = "";
+        var firstMsg = true; 
         socket.on('response', function(msg) {
-            stopLoading(); 
-            var thinking = extractTextBetweenSubstrings(msg, "<think>", "</think>"); 
-            const woah = document.createElement('h2');
-            woah.textContent = "Thoughts: ";
-            const thinkPara = document.createElement('p'); 
-            thinkPara.textContent = thinking; 
-            const wow = document.createElement("h2");
-            wow.textContent = "Response: ";
-            const paragraph = document.createElement('b'); 
-            var txt = "";
-            txt = msg.replace(thinking, ""); 
-            txt = txt.replace("<think>", "");
-            txt = txt.replace("</think>", ""); 
-            paragraph.textContent = txt; 
 
-            const parentElement = document.getElementById("textContainer"); 
-            parentElement.appendChild(woah); 
-            parentElement.appendChild(thinkPara); 
-            parentElement.appendChild(wow);
-            parentElement.appendChild(paragraph); 
-            paragraph.scrollIntoView();
+
 
         });
         function extractTextBetweenSubstrings(text, startMark, endMark) {
@@ -136,6 +223,165 @@
 
     return text.substring(startAfter, endBefore);
 }
+const video = document.getElementById("video");
+
+// access webcam
+navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => { video.srcObject = stream; })
+    .catch(err => console.error("Error accessing webcam:", err));
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+async function captureAndSend(pmt) {
+    
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // draw image from video feed
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // convert image to base64
+            const imageData = canvas.toDataURL("image/jpeg").split(",")[1];
+            const prompt = pmt; 
+            // send to backend
+            const reply = await fetch("/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: imageData, prompt })
+            });
+
+            const jsonMsg = await reply.json();
+            msg = JSON.stringify(jsonMsg); 
+            console.log(msg); 
+            stopLoading();
+            fullTxt += msg; 
+            const think = document.createElement('h2');
+            think.textContent = "Thinking: "; 
+            const response = document.createElement('h2'); 
+            response.textContent = 'Response: '; 
+            const parentElement = document.getElementById("othertxt");
+            const paragraph = document.createElement('span'); 
+            if (firstMsg) {
+                parentElement.appendChild(document.createElement("br")); 
+                firstMsg = false;
+            }
+            if (msg == "SYSTEM RESPONSE FINISHED") {
+                if (responseTxt.includes("{")) {
+                    extractMovement(responseTxt); 
+                }
+                console.log("FULL TXT: " + fullTxt); 
+                var sss = new SpeechSynthesisUtterance();
+                sss.text = responseTxt;
+                window.speechSynthesis.speak(sss);
+                isThinking = false;
+                isResponding = false; 
+                fullTxt = "";
+                responseTxt = "";
+                firstMsg = true; 
+            } else {
+
+            if (msg == "<think>") {
+                parentElement.appendChild(document.createElement("br")); 
+                parentElement.appendChild(think); 
+                parentElement.appendChild(document.createElement("br")); 
+                isThinking = true; 
+                isResponding = false; 
+            } else if (msg == "</think>") {
+                parentElement.appendChild(document.createElement("br")); 
+                parentElement.appendChild(response); 
+                parentElement.appendChild(document.createElement("br")); 
+                isThinking = false; 
+            isResponding = true;
+            } else {
+                if (!isThinking && !isResponding) {
+                    responseTxt += msg; 
+                }
+                if (isResponding) {
+                    responseTxt += msg; 
+
+                }
+                paragraph.textContent = msg;
+                parentElement.appendChild(paragraph); 
+                paragraph.scrollIntoView();
+            }
+        }
+        }
+async function extractMovement(string) {
+    var newTxt = extractTextBetweenSubstrings(string, "{", "}");
+    var possibleCombs = newTxt.split(","); 
+    for (let i = 0; i < possibleCombs.length; i++) {
+        if (possibleCombs[i].includes("forward")) {
+            console.log("NEW COMMAND RECIEVED! 1");
+            var dStr = possibleCombs[i].replace("forward:", "");
+            var tStr = Number(dStr); 
+            var time = (Math.floor((tStr * 1000) / 3.8)); 
+            console.log(time); 
+            moveForward();
+          await new Promise(resolve => setTimeout(resolve, time));
+          stopRobot();
+        } else if (possibleCombs[i].includes("backward")) {
+            console.log("NEW COMMAND RECIEVED! 2");
+            var dStr = possibleCombs[i].replace("backward:", "");
+            console.log(dStr); 
+            var tStr = Number(dStr)
+            var time = (Math.floor((tStr * 1000) / 3.8)); 
+            console.log(time); 
+            moveReverse();
+          await new Promise(resolve => setTimeout(resolve, time));
+          stopRobot();
+        } else if (possibleCombs[i].includes("right")) {
+            console.log("NEW COMMAND RECIEVED! 3");
+            var dStr = possibleCombs[i].replace("right:", "");
+            console.log(dStr); 
+            var tStr = Number(dStr); 
+            var time = Math.floor(tStr * 25.5);
+            console.log(time); 
+            moveRight();
+          await new Promise(resolve => setTimeout(resolve, time));
+          stopRobot();
+        } else if (possibleCombs[i].includes("left")) {
+            console.log("NEW COMMAND RECIEVED! 4");
+            var dStr = possibleCombs[i].replace("left:", "");
+            console.log(dStr); 
+            var tStr = Number(dStr); 
+            var time = Math.floor(tStr * 25.5);
+            console.log(time); 
+            moveLeft();
+          await new Promise(resolve => setTimeout(resolve, time));
+          stopRobot();
+        }   else if (possibleCombs[i].includes("up")) {
+            console.log("NEW COMMAND RECIEVED! 5");
+            var dStr = possibleCombs[i].replace("up:", "");
+            console.log(dStr); 
+            var tStr = Number(dStr); 
+            var time = Math.floor(tStr * 20);
+            console.log(time); 
+            moveUp();
+          await new Promise(resolve => setTimeout(resolve, time));
+          stopArm();
+        }else if (possibleCombs[i].includes("down")) {
+            console.log("NEW COMMAND RECIEVED! 5");
+            var dStr = possibleCombs[i].replace("down:", "");
+            console.log(dStr); 
+            var tStr = Number(dStr); 
+            var time = Math.floor(tStr * 20);
+            console.log(time); 
+            moveDown();
+          await new Promise(resolve => setTimeout(resolve, time));
+          stopArm();
+        } else if (possibleCombs[i].includes("goToObject")) {
+            console.log("NEW COMMAND RECIEVED! 6");
+            var dStr = possibleCombs[i].replace("goToObject:", "");
+            console.log(dStr); 
+            var tStr = dStr; 
+            homeToItem(tStr); 
+        }
+    }
+}
+function homeToItem(itemName)
+ {
+
+ } 
     </script>
 </body>
 </html>
