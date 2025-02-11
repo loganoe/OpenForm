@@ -50,6 +50,7 @@
             line-height: 2; 
             font-family: sans-serif; 
         }
+        #cameraSelect { position: fixed; top: 5%; right: 5%; z-index: 10; }
         @-webkit-keyframes spin {
   0% { -webkit-transform: rotate(0deg); }
   100% { -webkit-transform: rotate(360deg); }
@@ -111,31 +112,36 @@
 
     </div>
     <div id="textContainer">
+        <div id="speechRecog">
+
+        </div>
         <div id="othertxt">
 
         </div>
     </div>
     <video id="video" width="640" height="480" autoplay></video>
+    <select id="cameraSelect"></select>
     <input id="maintxtbox" placeholder="Ask Argo Anything" onkeydown="search(this)"></input> 
     <button id ="outputh">Start Voice Recognition</button>
     <script>
 const startButton = document.getElementById('outputh');
 const outputDiv = document.getElementById('othertxt');
-function moveForward() { fetch('/forward'); }
+var espIp = "http://192.168.68.173"; 
+function moveForward() { fetch(espIp + '/forward'); }
 
-function moveLeft() { fetch('/left'); }
+function moveLeft() { fetch( espIp + '/left'); }
 
-function stopRobot() { fetch('/stop'); }
+function stopRobot() { fetch( espIp + '/stop'); }
 
-function moveRight() { fetch('/right'); }
+function moveRight() { fetch( espIp + '/right'); }
 
-function moveReverse() { fetch('/reverse'); }
+function moveReverse() { fetch( espIp + '/reverse'); }
 
-function moveUp() { fetch('/up'); }
+function moveUp() { fetch( espIp + '/up'); }
 
-function stopArm() { fetch('/stoparm'); }
+function stopArm() { fetch( espIp + '/stoparm'); }
 
-function moveDown() { fetch('/down'); }
+function moveDown() { fetch( espIp + '/down'); }
 function fetchDistanceAuto() {
   return fetch('/distance')
     .then(response => response.text())
@@ -154,21 +160,20 @@ recognition.onstart = () => {
 recognition.onresult = (event) => {
     if (!isResponding && !isThinking) {
     const transcript = event.results[0][0].transcript;
-    outputDiv.textContent = transcript;
+    var pntElm = document.getElementById("speechRecog");
+    pntElm.textContent = transcript;
     if ((transcript.toLowerCase().includes("argo"))) {
         var ask = transcript.toLowerCase().replace("argo", "");
         console.log("User voice request: " + ask); 
-        if (!isResponding && !isThinking) {
         window.speechSynthesis.cancel(); 
-        captureAndSend(document.getElementById("maintxtbox").value);
+        captureAndSend(ask);
                 loading(); 
-                const parentElement = document.getElementById("othertxt");
+                const parentElement = document.getElementById("speechRecog");
                 const txt = document.createElement("b"); 
                 txt.textContent = document.getElementById("maintxtbox").value; 
                 txt.style.float = "right"; 
                 parentElement.appendChild(txt);
                 document.getElementById("maintxtbox").value = ""; 
-    }
     }
 
     }
@@ -230,11 +235,37 @@ startButton.addEventListener('click', () => {
     return text.substring(startAfter, endBefore);
 }
 const video = document.getElementById("video");
+        const cameraSelect = document.getElementById("cameraSelect");
 
-// access webcam
-navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => { video.srcObject = stream; })
-    .catch(err => console.error("Error accessing webcam:", err));
+        async function getCameras() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+            cameraSelect.innerHTML = "";
+            videoDevices.forEach((device, index) => {
+                const option = document.createElement("option");
+                option.value = device.deviceId;
+                option.textContent = device.label || `Camera ${index + 1}`;
+                cameraSelect.appendChild(option);
+            });
+
+            if (videoDevices.length > 0) {
+                startCamera(videoDevices[0].deviceId);
+            }
+        }
+
+        async function startCamera(deviceId) {
+            if (!deviceId) return;
+            const constraints = { video: { deviceId: { exact: deviceId } } };
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = stream;
+        }
+
+        cameraSelect.addEventListener("change", () => {
+            startCamera(cameraSelect.value);
+        });
+
+        getCameras();
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -257,7 +288,9 @@ async function captureAndSend(pmt) {
             });
 
             const jsonMsg = await reply.json();
-            msg = JSON.stringify(jsonMsg); 
+            const textJson = JSON.stringify(jsonMsg);
+            const parsedResponse = JSON.parse(textJson); 
+            var msg = parsedResponse.reply; 
             console.log(msg); 
             stopLoading();
             fullTxt += msg; 
@@ -272,18 +305,7 @@ async function captureAndSend(pmt) {
                 firstMsg = false;
             }
             if (msg == "SYSTEM RESPONSE FINISHED") {
-                if (responseTxt.includes("{")) {
-                    extractMovement(responseTxt); 
-                }
-                console.log("FULL TXT: " + fullTxt); 
-                var sss = new SpeechSynthesisUtterance();
-                sss.text = responseTxt;
-                window.speechSynthesis.speak(sss);
-                isThinking = false;
-                isResponding = false; 
-                fullTxt = "";
-                responseTxt = "";
-                firstMsg = true; 
+
             } else {
 
             if (msg == "<think>") {
@@ -311,6 +333,20 @@ async function captureAndSend(pmt) {
                 paragraph.scrollIntoView();
             }
         }
+        if (responseTxt.includes("{")) {
+                    extractMovement(responseTxt); 
+                }
+                console.log("FULL TXT: " + fullTxt); 
+                var sss = new SpeechSynthesisUtterance();
+                sss.text = responseTxt;
+                window.speechSynthesis.speak(sss);
+                isThinking = false;
+                isResponding = false; 
+                fullTxt = "";
+                responseTxt = "";
+                firstMsg = true; 
+                parentElement.appendChild(document.createElement("br")); 
+                parentElement.appendChild(document.createElement("br")); 
         }
 async function extractMovement(string) {
     var newTxt = extractTextBetweenSubstrings(string, "{", "}");
