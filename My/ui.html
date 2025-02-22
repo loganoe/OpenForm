@@ -123,7 +123,83 @@
     <select id="cameraSelect"></select>
     <input id="maintxtbox" placeholder="Ask Argo Anything" onkeydown="search(this)"></input> 
     <button id ="outputh">Start Voice Recognition</button>
+    <button onclick="speakTest()">Enable Voice</button>
     <script>
+        function speakTest() {
+            var msg = new SpeechSynthesisUtterance();
+msg.text = "Hello World";
+window.speechSynthesis.speak(msg);
+        }
+        let _speechSynth
+let _voices
+const _cache = {}
+
+/**
+ * retries until there have been voices loaded. No stopper flag included in this example. 
+ * Note that this function assumes, that there are voices installed on the host system.
+ */
+
+function loadVoicesWhenAvailable (onComplete = () => {}) {
+  _speechSynth = window.speechSynthesis
+  const voices = _speechSynth.getVoices()
+
+  if (voices.length !== 0) {
+    _voices = voices
+    onComplete()
+  } else {
+    return setTimeout(function () { loadVoicesWhenAvailable(onComplete) }, 100)
+  }
+}
+
+/**
+ * Returns the first found voice for a given language code.
+ */
+
+function getVoices (locale) {
+  if (!_speechSynth) {
+    throw new Error('Browser does not support speech synthesis')
+  }
+  if (_cache[locale]) return _cache[locale]
+
+  _cache[locale] = _voices.filter(voice => voice.lang === locale)
+  return _cache[locale]
+}
+
+/**
+ * Speak a certain text 
+ * @param locale the locale this voice requires
+ * @param text the text to speak
+ * @param onEnd callback if tts is finished
+ */
+
+function playByText (locale, text, onEnd) {
+  const voices = getVoices(locale)
+
+  // TODO load preference here, e.g. male / female etc.
+  // TODO but for now we just use the first occurrence
+  const utterance = new window.SpeechSynthesisUtterance()
+  utterance.voice = voices[0]
+  utterance.pitch = 1
+  utterance.rate = 1
+  utterance.voiceURI = 'native'
+  utterance.volume = 1
+  utterance.rate = 1
+  utterance.pitch = 0.8
+  utterance.text = text
+  utterance.lang = locale
+
+  if (onEnd) {
+    utterance.onend = onEnd
+  }
+
+  _speechSynth.cancel() // cancel current speak, if any is running
+  _speechSynth.speak(utterance)
+}
+
+// on document ready
+loadVoicesWhenAvailable(function () {
+ console.log("loaded") 
+})
 const startButton = document.getElementById('outputh');
 const outputDiv = document.getElementById('othertxt');
 var espIp = "http://192.168.68.173"; 
@@ -188,7 +264,7 @@ startButton.addEventListener('click', () => {
     recognition.start();
 });
 
-             var socket = io('http://192.168.68.110:3000');
+
         async function search(ele) {
             if (event.key === 'Enter') {
                 window.speechSynthesis.cancel(); 
@@ -216,11 +292,7 @@ startButton.addEventListener('click', () => {
         var responseTxt = ""; 
         var fullTxt = "";
         var firstMsg = true; 
-        socket.on('response', function(msg) {
 
-
-
-        });
         function extractTextBetweenSubstrings(text, startMark, endMark) {
     const startIndex = text.indexOf(startMark);
     const endIndex = text.indexOf(endMark);
@@ -420,6 +492,22 @@ async function extractMovement(string) {
         }
     }
 }
+    // Create an EventSource connection to listen for server-sent events
+    const eventSource = new EventSource("https://192.168.68.110:3001/events");
+
+    // Listen for messages from the backend
+    eventSource.onmessage = function(event) {
+      const data = event.data;
+      
+      // When a message is received, show an alert with the message
+      console.log("Message from server:", data);
+      captureAndSend(data);
+    };
+
+    // Handle any errors with the EventSource
+    eventSource.onerror = function(error) {
+      console.error("Error with SSE connection:", error);
+    };
 function homeToItem(itemName)
  {
 
