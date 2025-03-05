@@ -1,7 +1,7 @@
 [
   {
     "name": "jushrickastley",
-    "pass": "flatPassword"
+    "pass": "flatPasssword"
   },
   {
     "name": "testaccount2002390903",
@@ -72,14 +72,6 @@
     "pass": "sid"
   },
   {
-    "name": "‏‏‎ ‎jushric‎‏‏‎‎kastley‎‎‏‏‎",
-    "pass": "sid"
-  },
-  {
-    "name": "‏‏‎jushric‎‏‏‎‎kastley‎‎‏‏‎",
-    "pass": "rickpassword"
-  },
-  {
     "name": "jushrickastIey",
     "pass": "3512"
   },
@@ -94,18 +86,6 @@
   {
     "name": "&rlm;&rlm;&lrm; &lrm;jushric&lrm;&rlm;&kastley",
     "pass": "heights"
-  },
-  {
-    "name": "jushrickastley‎ ",
-    "pass": "t"
-  },
-  {
-    "name": "jushrickastle‎ y‎",
-    "pass": "hihi123"
-  },
-  {
-    "name": "jushrickastle‎‏y‏‏‏‎",
-    "pass": "154"
   },
   {
     "name": "john%22,%22accountType%22:%22administrator%22",
@@ -142,5 +122,9 @@
   {
     "name": "rtx5090",
     "pass": "nvidialegitbro"
+  },
+  {
+    "name": "jushrickastley\t",
+    "pass": "flatPassword"
   }
 ]

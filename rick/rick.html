@@ -145,13 +145,14 @@
             transform: translateX(-50%); 
             color: #ff6b6b; 
             font-size: 14px;
-            background-color: rgba(31, 31, 39, 0.8);
+            background-color: rgba(31, 31, 39, 0);
             padding: 5px 10px;
             border-radius: var(--border-radius-sm);
             z-index: 10;
         }
 
         #serverSelect {
+
             position: fixed;
             right: 3%; 
             top: 3%;
@@ -269,6 +270,18 @@
             border-left: none;
         }
 
+        /* Section divider in sidenav */
+        .sidenav-section {
+            margin: 20px 0 10px 32px;
+            font-size: 14px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--accent-color);
+            padding-bottom: 5px;
+            width: 80%;
+        }
+
         .openNavBtn {
             position: fixed;
             top: 20px;
@@ -313,12 +326,22 @@
     </style> 
 </head>
 <body>
-    <div id="mySidenav" class="sidenav">
-        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-        <a href="#" onclick="changeServer('global')">Global Chat</a>
-        <a href="#" onclick="showServerInput()">Join Server</a>
-        <a href="#" onclick="logout()">Logout</a>
+
+  <div id="mySidenav" class="sidenav">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    <a href="#" onclick="changeServer('global')">Global Chat</a>
+    <a href="#" onclick="showServerInput()">Join Server</a>
+    
+    <!-- New section for recent servers -->
+    <div class="sidenav-section">Recent Servers</div>
+    <div id="recentServers">
+      <!-- Recent servers will be added here dynamically -->
     </div>
+    
+    <div class="sidenav-section">Account</div>
+    <a href="#" onclick="logout()">Logout</a>
+  </div>
+
 
     <div class="openNavBtn" onclick="openNav()">☰</div>
 
@@ -352,14 +375,79 @@
         // Update server banner
         document.getElementById("serverBanner").textContent = server;
 
+        // Initialize server history
+        let serverHistory = [];
+        
+        // Load server history from localStorage
+        function loadServerHistory() {
+            const savedServers = localStorage.getItem('serverHistory');
+            if (savedServers) {
+                serverHistory = JSON.parse(savedServers);
+                updateRecentServersUI();
+            }
+        }
+        
+        // Save server to history
+        function saveServerToHistory(serverName) {
+            // Don't add duplicates
+            if (!serverHistory.includes(serverName)) {
+                // Add to beginning of array
+                serverHistory.unshift(serverName);
+                
+                // Limit to 5 recent servers
+                if (serverHistory.length > 5) {
+                    serverHistory.pop();
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('serverHistory', JSON.stringify(serverHistory));
+                
+                // Update UI
+                updateRecentServersUI();
+            }
+        }
+        
+        // Update the recent servers section in the sidenav
+        function updateRecentServersUI() {
+            const recentServersElement = document.getElementById('recentServers');
+            recentServersElement.innerHTML = '';
+            
+            if (serverHistory.length === 0) {
+                const noServersElement = document.createElement('a');
+                noServersElement.href = "#";
+                noServersElement.style.color = "var(--text-secondary)";
+                noServersElement.style.fontStyle = "italic";
+                noServersElement.textContent = "No recent servers";
+                recentServersElement.appendChild(noServersElement);
+            } else {
+                serverHistory.forEach(serverName => {
+                    if (serverName !== 'global') { // Don't show global in recent list
+                        const serverLink = document.createElement('a');
+                        serverLink.href = "#";
+                        serverLink.textContent = serverName;
+                        serverLink.onclick = function() {
+                            changeServer(serverName);
+                        };
+                        recentServersElement.appendChild(serverLink);
+                    }
+                });
+            }
+        }
+
         socket.on('siddartha', function(msg) {
             document.location="https://youtube.com/watch?v=dQw4w9WgXcQ";
         });
         
+        var adminlist = ["jushrickastley"]; 
         socket.on('logUpdate', function(msg) {
             const p = document.createElement("p");
             var newp = msg.replace(":skull:", "💀");
             p.innerText = newp; 
+            var stuffs = msg.split(':');
+            var usernm = stuffs[0]; 
+            if (adminlist.includes(usernm)) {
+                p.style.cursor = "help"; 
+            }
             document.getElementById("woah").appendChild(p); 
             p.scrollIntoView({ behavior: 'smooth' }); 
             console.log("it worked"); 
@@ -427,6 +515,12 @@
             server = serverName;
             document.getElementById("woah").innerHTML = ""; // Clear messages
             document.getElementById("serverBanner").textContent = server;
+            
+            // Save to history if it's not the global server
+            if (serverName !== 'global') {
+                saveServerToHistory(serverName);
+            }
+            
             closeNav();
         }
         
@@ -444,10 +538,15 @@
         function joinserver() {
             if (document.getElementById("namef").value) {
                 prevserver = server; 
-                socket.emit('joinRequest', [document.getElementById("namef").value, prevserver]); 
-                server = document.getElementById("namef").value; 
+                const newServer = document.getElementById("namef").value;
+                socket.emit('joinRequest', [newServer, prevserver]); 
+                server = newServer; 
                 document.getElementById("woah").innerHTML = ""; // Clear messages
                 document.getElementById("serverBanner").textContent = server;
+                
+                // Save to server history
+                saveServerToHistory(newServer);
+                
                 document.getElementById("namef").value = "";
                 document.getElementById("serverSelect").style.display = "none";
             } else {
@@ -456,6 +555,7 @@
         }
         
         function logout() {
+          localStorage.clear();
             document.cookie.split(';').forEach(cookie => {
                 const eqPos = cookie.indexOf('=');
                 const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
@@ -466,6 +566,10 @@
         
         // Hide server select by default
         document.getElementById("serverSelect").style.display = "none";
+        
+        // Load server history when page loads
+        loadServerHistory();
     </script>
 </body>
 </html>
+

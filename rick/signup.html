@@ -211,15 +211,20 @@
     <script> 
           var socket = io();
           socket.on('taken', function(msg) {
-        document.getElementById('error-message').innerHTML = "Username already taken :skull:"; 
+            document.getElementById('errortxt').innerHTML = "That username is already taken."; 
+            document.getElementById('errortxt').classList.add('visible');
   });
   socket.on('signupSuccess', function(msg) {
         setCookie("username", msg[0], 1000);
         setCookie("password", msg[1], 1000); 
         document.location = "/rick"; 
   });
-  if (getCookie(username)) {
+  if (document.cookie) {
+    console.log("muy sigma")
     document.location = "/rick";
+  } else {
+    console.log("no muy sigma");
+    console.log(getCookie("username"));
   }
 
   function getCookie(cname) {
@@ -237,19 +242,23 @@
   }
   return "";
 }
+function clearError() {
+            document.getElementById("errortxt").innerHTML = ""; 
+            document.getElementById('errortxt').classList.remove('visible');
+        }
   function setCookie(cname, cvalue, exdays) {
   const d = new Date();
   d.setTime(d.getTime() + (exdays*24*60*60*1000));
   let expires = "expires="+ d.toUTCString();
   document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
 }
-function clearError() { 
-    document.getElementById("errortxt").innerHTML = ""; 
-} 
+
     function validateSignup() {
         socket.emit("signupMessage", [document.getElementById("usn").value, document.getElementById("ps").value]); 
     }
-    
+            // Clear error when user starts typing
+            document.getElementById('usn').addEventListener('input', clearError);
+        document.getElementById('ps').addEventListener('input', clearError);
     </script> 
 </body>
 </html>
