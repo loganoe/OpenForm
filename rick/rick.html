@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rick.</title>
+    <style> 
+        :root {
+            --bg-primary: #1f1f27;
+            --bg-secondary: #31313a;
+            --accent-color: #578e92;
+            --text-primary: #ffffff;
+            --text-secondary: #e2e2e2;
+            --border-radius-lg: 30px;
+            --border-radius-md: 15px;
+            --border-radius-sm: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-primary); 
+            font-family: 'Courier New', Courier, monospace; 
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Chat container */
+        .chat-container {
+            position: absolute;
+            width: 75vw;
+            left: 12.5vw;
+            height: 75vh;
+            top: 3vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: var(--border-radius-lg);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 
+                        0 15px 12px rgba(0, 0, 0, 0.22);
+            overflow: hidden; /* Ensure content doesn't overflow rounded corners */
+        }
+
+        /* Server banner - integrated with chat container */
+        .server-banner {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 15px 20px;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 2px solid var(--accent-color);
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .server-banner span {
+            color: var(--accent-color);
+            margin-left: 8px;
+        }
+
+        /* Server icon */
+        .server-icon {
+            width: 24px;
+            height: 24px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        /* Chat messages area */
+        #woah {
+            flex: 1;
+            overflow-y: auto;
+            background-color: var(--bg-secondary);
+            padding: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-color) var(--bg-secondary);
+        }
+
+        #woah::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #woah::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+
+        #woah::-webkit-scrollbar-thumb {
+            background-color: var(--accent-color);
+            border-radius: 10px;
+        }
+
+        #woah p {
+            margin-bottom: 12px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        #pro {
+            position: fixed; 
+            bottom: 5vh; 
+            height: auto;
+            width: 60vw;
+            border-radius: var(--border-radius-md); 
+            left: 50%;
+            padding: 15px; 
+            font-size: 17px; 
+            transform: translateX(-50%);
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--accent-color);
+            outline: none;
+            transition: all 0.3s;
+            opacity: 0.8;
+            z-index: 10;
+        }
+
+        #pro:focus {
+            opacity: 1;
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+
+        #pro:hover {
+            opacity: 1;
+
+        }
+
+        #errors {
+            position: fixed; 
+            bottom: 2vh; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            color: #ff6b6b; 
+            font-size: 14px;
+            background-color: rgba(31, 31, 39, 0.8);
+            padding: 5px 10px;
+            border-radius: var(--border-radius-sm);
+            z-index: 10;
+        }
+
+        #serverSelect {
+            position: fixed;
+            right: 3%; 
+            top: 3%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: var(--bg-secondary);
+            padding: 25px;
+            border-radius: var(--border-radius-md);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+            min-width: 250px;
+        }
+
+        .serverButton {
+            padding: 12px 15px;
+            color: var(--text-primary); 
+            background-color: var(--bg-primary); 
+            border-radius: var(--border-radius-sm); 
+            transition: all 0.3s ease; 
+            border: 2px solid var(--accent-color);
+            cursor: pointer;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        } 
+
+        .serverButton:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .serverButton:active {
+            transform: translateY(1px);
+        }
+
+        .serverInput {
+            padding: 12px;
+            border-radius: var(--border-radius-sm);
+            border: 2px solid var(--accent-color);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Courier New', Courier, monospace;
+            outline: none;
+        }
+
+        /* Close button for server select */
+        .close-server-select {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-primary);
+            background-color: var(--bg-primary);
+            border: 2px solid var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .close-server-select:hover {
+            background-color: var(--accent-color);
+            color: var(--bg-primary);
+        }
+
+        /* Sidenav styling */
+        .sidenav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 30;
+            top: 0;
+            left: 0;
+            background-color: var(--bg-secondary);
+            overflow-x: hidden;
+            padding-top: 60px;
+            transition: 0.5s;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidenav a {
+            padding: 15px 15px 15px 32px;
+            text-decoration: none;
+            font-size: 18px;
+            color: var(--text-primary);
+            display: block;
+            transition: 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .sidenav a:hover {
+            color: var(--accent-color);
+            border-left: 4px solid var(--accent-color);
+        }
+
+        /* Modified close button for sidenav to remove highlight */
+        .sidenav .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+            text-decoration: none;
+            color: var(--text-primary);
+            border-left: none;
+        }
+
+        .sidenav .closebtn:hover {
+            color: var(--text-primary);
+            border-left: none;
+        }
+
+        .openNavBtn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 15;
+        }
+
+        #main {
+            transition: margin-left 0.5s;
+            padding: 20px;
+        }
+
+        @media screen and (max-width: 768px) {
+            .chat-container {
+                width: 90vw;
+                left: 5vw;
+            }
+
+            #pro {
+                width: 80vw;
+            }
+
+            .sidenav {
+                padding-top: 50px;
+            }
+
+            .sidenav a {
+                font-size: 16px;
+            }
+        }
+    </style> 
+</head>
+<body>
+    <div id="mySidenav" class="sidenav">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <a href="#" onclick="changeServer('global')">Global Chat</a>
+        <a href="#" onclick="showServerInput()">Join Server</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+
+    <div class="openNavBtn" onclick="openNav()">☰</div>
+
+    <!-- Integrated chat container with banner -->
+    <div class="chat-container">
+        <div class="server-banner">
+            <div class="server-icon">#</div>
+            Server: <span id="serverBanner">global</span>
+        </div>
+        <div id="woah">
+            <!-- Chat messages will appear here -->
+        </div>
+    </div>
+
+    <div id="main">
+        <div id="serverSelect">
+            <button class="close-server-select" onclick="hideServerInput()">&times;</button>
+            <input id="namef" class="serverInput" type="text" placeholder="Server name" />
+            <button class="serverButton" onclick="joinserver()">Join Server</button>
+        </div>
+        <input id="pro" type="text" placeholder="Type your message here..." onkeydown="check(event)" maxlength="4000" />
+        <p id="errors"></p>
+    </div>
+    
+    <script>
+        var server = "global"; 
+        var socket = io();
+        var username = getCookie("username"); 
+        var password = getCookie("password");
+        
+        // Update server banner
+        document.getElementById("serverBanner").textContent = server;
+
+        socket.on('siddartha', function(msg) {
+            document.location="https://youtube.com/watch?v=dQw4w9WgXcQ";
+        });
+        
+        socket.on('logUpdate', function(msg) {
+            const p = document.createElement("p");
+            var newp = msg.replace(":skull:", "💀");
+            p.innerText = newp; 
+            document.getElementById("woah").appendChild(p); 
+            p.scrollIntoView({ behavior: 'smooth' }); 
+            console.log("it worked"); 
+        });
+        
+        if (document.cookie) {
+            socket.emit("verification", [username, password]); 
+        } else {
+            console.log('bruh');
+            document.location = "/login";
+        }
+        
+        function getCookie(cname) {
+            let name = cname + "=";
+            let decodedCookie = decodeURIComponent(document.cookie);
+            let ca = decodedCookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
+        
+        function openNav() {
+            document.getElementById("mySidenav").style.width = "250px";
+            document.getElementById("main").style.marginLeft = "250px";
+        }
+        
+        function closeNav() {
+            document.getElementById("mySidenav").style.width = "0";
+            document.getElementById("main").style.marginLeft = "0";
+        }
+        
+        function check(e) { 
+            if (e.key === "Enter") {
+                if (document.getElementById("pro").value) {
+                    console.log('sigma'); 
+                    socket.emit("verification", [username, password]); 
+                    socket.emit("userMessage", [document.getElementById("pro").value, server, username, password]); 
+                    document.getElementById("pro").value = "";
+                } else {
+                    showError("No empty messages"); 
+                }
+            }
+        }
+        
+        function showError(message) {
+            const errorElement = document.getElementById("errors");
+            errorElement.textContent = message;
+            errorElement.style.opacity = "1";
+            
+            setTimeout(() => {
+                errorElement.style.opacity = "0";
+            }, 3000);
+        }
+        
+        function changeServer(serverName) {
+            prevserver = server;
+            socket.emit('joinRequest', [serverName, prevserver]); 
+            server = serverName;
+            document.getElementById("woah").innerHTML = ""; // Clear messages
+            document.getElementById("serverBanner").textContent = server;
+            closeNav();
+        }
+        
+        function showServerInput() {
+            document.getElementById("serverSelect").style.display = "flex";
+            closeNav();
+            document.getElementById("namef").focus();
+        }
+        
+        function hideServerInput() {
+            document.getElementById("serverSelect").style.display = "none";
+        }
+        
+        var prevserver; 
+        function joinserver() {
+            if (document.getElementById("namef").value) {
+                prevserver = server; 
+                socket.emit('joinRequest', [document.getElementById("namef").value, prevserver]); 
+                server = document.getElementById("namef").value; 
+                document.getElementById("woah").innerHTML = ""; // Clear messages
+                document.getElementById("serverBanner").textContent = server;
+                document.getElementById("namef").value = "";
+                document.getElementById("serverSelect").style.display = "none";
+            } else {
+                showError("Please enter a server name");
+            }
+        }
+        
+        function logout() {
+            document.cookie.split(';').forEach(cookie => {
+                const eqPos = cookie.indexOf('=');
+                const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
+                document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            });
+            document.location = "/"; 
+        }
+        
+        // Hide server select by default
+        document.getElementById("serverSelect").style.display = "none";
+    </script>
+</body>
+</html>
