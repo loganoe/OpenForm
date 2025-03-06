@@ -1,0 +1,24 @@
+{
+  "homeworks": [
+    {
+      "id": "1741241182179",
+      "imagePath": "C:\\Users\\logan\\rick\\homework-app\\uploads\\1741241182177-803644604.jpg",
+      "problemNumbers": [
+        "6",
+        "7",
+        "8"
+      ],
+      "createdAt": "2025-03-06T06:06:22.179Z"
+    },
+    {
+      "id": "1741241205333",
+      "imagePath": "C:\\Users\\logan\\rick\\homework-app\\uploads\\1741241205332-466963379.jpg",
+      "problemNumbers": [
+        "9",
+        "10",
+        "11"
+      ],
+      "createdAt": "2025-03-06T06:06:45.333Z"
+    }
+  ]
+}
