@@ -195,37 +195,33 @@ When a task requires continuous action, append "PERSISTENT" to your response. Fo
 Ensure you always use a single set of curly brackets for any instaructions, as multiple sets will break the system. Avoid any commands that aren't {forward}, {backward}, {left}, {right}, {up}, or {down}, and remember to add the appropriate numbers for each movement. In responses, prioritize brevity and conciseness. Try to keep messages under 50 words.`;
 var prePrompt = ""; 
 // handle image analysis request
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const genAI = new GoogleGenerativeAI('AIzaSyDZtbI_RhTgQbA4DnWDPoY25hXd7nkcmdM');
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-app.post('/analyze', async (req, res) => {
+app.post("/analyze", async (req, res) => {
     try {
-        const { image } = req.body;
+        const { image, prompt } = req.body;
 
-        // Decode base64 image
-        const imagePath = path.join(__dirname, 'input.jpg');
-        fs.writeFileSync(imagePath, Buffer.from(image, 'base64'));
-
-        // Read the image file
-        const imageFile = fs.readFileSync(imagePath);
-
-        // Send request to Gemini API for image analysis
-        const response = await model.generateContent({
-            prompt: 'Analyze the content of the provided image.',
-            images: [imageFile], // Send image as buffer
-            responseModalities: ['text'],
+        // decode base64 image
+        const imagePath = path.join(__dirname, "input.jpg");
+        fs.writeFileSync(imagePath, Buffer.from(image, "base64"));
+        console.log(imagePath); 
+        // send to ollama
+        const response = await axios.post("http://localhost:11434/api/generate", {
+            model: "minicpm-v",
+            prompt: `${SYSTEM_PROMPT}\nUser: ${prompt + ""}`,
+            images: [fs.readFileSync(imagePath, "base64")], // send image as base64
+            stream: false
         });
+        console.log("User request sent: ", prompt);
+        prePrompt = prompt; 
+        console.log(response.data.response);
 
-        // Extract the text response
-        const reply = response.text;
-
-        // Send the reply back to the client
-        res.json({ reply: reply });
+        res.json({ reply: response.data.response });
+        await extractMovement(response.data.response);
     } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ error: 'Failed to process image' });
+        console.error("Error:", error);
+        res.status(500).json({ error: "Failed to process image" });
     }
 });
+
 // serve the HTML file for the chat UI
 app.get('/', function (req, res) {
     res.sendFile(path.join(__dirname, '/ui.html'));
