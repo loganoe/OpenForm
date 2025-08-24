@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intellify Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">Intellify</h1>
+            <button id="settingsButton" class="settings-btn" aria-label="Toggle settings">
+                ⚙️
+            </button>
+        </header>
+
+        <div id="settingsContainer" class="settings-container hidden">
+            <div class="settings-content">
+                <h3 class="settings-title">API Configuration</h3>
+                <div class="input-group">
+                    <label for="apiKeyInput" class="label">Gemini API Key</label>
+                    <input 
+                        type="password" 
+                        id="apiKeyInput" 
+                        class="input" 
+                        placeholder="Enter your API key"
+                        autocomplete="off"
+                    >
+                </div>
+                <button id="saveApiKeyButton" class="btn btn-primary">
+                    Save API Key
+                </button>
+                <div id="status-message" class="status-message"></div>
+            </div>
+        </div>
+
+        <main class="main-content">
+            <div class="input-group">
+                <label for="questionInput" class="label">Ask about this page</label>
+                <textarea 
+                    id="questionInput" 
+                    class="textarea" 
+                    placeholder="What would you like to know about this page?"
+                    rows="3"
+                ></textarea>
+            </div>
+            
+            <button id="askButton" class="btn btn-primary btn-large">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 12l4 4 4-4"></path>
+                    <path d="M12 2v14"></path>
+                </svg>
+                Ask Question
+            </button>
+
+            <div class="response-section">
+                <h3 class="response-title">Response</h3>
+                <div id="output-area" class="output-area">
+                    <div class="placeholder-text">
+                        Your response will appear here...
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
