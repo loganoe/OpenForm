@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenForm - AI CAD Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 10 9 10s9-4.45 9-10V7l-10-5z"/>
+                        <path d="M12 8v8"/>
+                        <path d="M8 12h8"/>
+                    </svg>
+                    OpenForm
+                </h1>
+                <div class="header-actions">
+                    <button id="checkOpenScadBtn" class="btn btn-secondary">Check OpenSCAD</button>
+                    <div class="status" id="statusIndicator">Ready</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="panel input-panel">
+                <div class="panel-header">
+                    <h2>Describe Your Model</h2>
+                    <p class="panel-subtitle">Enter a natural language description of the 3D model you want to create</p>
+                </div>
+                <div class="panel-content">
+                    <div class="form-group">
+                        <label for="modelDescription">Model Description</label>
+                        <textarea 
+                            id="modelDescription" 
+                            placeholder="e.g., Create a coffee cup with a handle, 10cm tall and 8cm diameter..."
+                            rows="6"
+                        ></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button id="generateBtn" class="btn btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="10,15 15,10 21,16"/>
+                                <path d="m9 11 3 3L22 4"/>
+                            </svg>
+                            Generate OpenSCAD Code
+                        </button>
+                        <button id="clearBtn" class="btn btn-secondary">Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel code-panel">
+                <div class="panel-header">
+                    <h2>Generated OpenSCAD Code</h2>
+                    <div class="panel-actions">
+                        <button id="copyCodeBtn" class="btn btn-secondary btn-sm">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                            Copy
+                        </button>
+                        <button id="saveCodeBtn" class="btn btn-secondary btn-sm">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                <polyline points="17,21 17,13 7,13 7,21"/>
+                                <polyline points="7,3 7,8 15,8"/>
+                            </svg>
+                            Save
+                        </button>
+                        <button id="renderBtn" class="btn btn-primary btn-sm">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="5,3 19,12 5,21"/>
+                            </svg>
+                            Render
+                        </button>
+                        <button id="parametersBtn" class="btn btn-secondary btn-sm">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 8v8"/>
+                                <path d="M8 12h8"/>
+                            </svg>
+                            Parameters
+                        </button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div class="modify-container" style="margin-bottom:1.5rem;">
+                        <input type="text" id="modifyPrompt" placeholder="Describe a modification (e.g. make it taller)" class="modify-input" style="width:70%;padding:0.75rem 1rem;border-radius:0.5rem;border:1px solid var(--border);background:var(--surface-light);color:var(--text-primary);font-size:1rem;margin-right:1rem;" />
+                        <button id="modifyBtn" class="btn btn-primary btn-sm" style="height:2.5rem;">Modify Model</button>
+                    </div>
+                    <div class="code-container" style="max-height:400px;min-height:200px;overflow:auto;box-shadow:0 2px 12px rgba(0,0,0,0.15);">
+                        <pre><code id="scadCode" class="language-clike">// Generated OpenSCAD code will appear here...</code></pre>
+                    </div>
+                    <div id="stlPreviewContainer" class="stl-preview-container hidden">
+                        <h4>STL Preview</h4>
+                        <canvas id="stlCanvas" width="400" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2025 OpenForm - AI-Powered CAD Generation</p>
+                <div class="footer-links">
+                    <span>Powered by Gemini AI & OpenSCAD</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p id="loadingText">Generating OpenSCAD code...</p>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <div id="parametersModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Edit Parameters</h3>
+            <div id="parametersContainer"></div>
+            <div class="modal-actions">
+                <button id="closeParametersBtn" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+<script src="node_modules/stl-viewer/build/stl-viewer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+    <script src="renderer.js"></script>
+</body>
+
+</html>

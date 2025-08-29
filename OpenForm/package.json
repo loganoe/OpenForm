@@ -1,0 +1,34 @@
+{
+  "name": "openform",
+  "version": "1.0.0",
+  "description": "AI-powered CAD model generator using Gemini API and OpenSCAD",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "pack": "electron-builder --dir"
+  },
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.2.1",
+    "axios": "^1.6.0",
+    "stl-viewer": "^0.12.0"
+  },
+  "build": {
+    "appId": "com.example.openform",
+    "productName": "OpenForm",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "node_modules/**/*"
+    ]
+  }
+}
