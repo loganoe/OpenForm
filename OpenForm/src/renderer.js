@@ -334,6 +334,7 @@ async function handleRender() {
         if (result.success) {
             showToast('Model rendered successfully! STL file created.', 'success');
             displaySTLPreview(result.stlPath);
+            displayPngPreview();
         } else {
             showToast(`Render failed: ${result.error}`, 'error');
         }
@@ -342,6 +343,15 @@ async function handleRender() {
         showToast('Failed to render model', 'error');
     } finally {
         hideLoading();
+    }
+}
+
+function displayPngPreview() {
+    const pngPreviewContainer = document.getElementById('pngPreviewContainer');
+    const modelPng = document.getElementById('modelPng');
+    if (modelPng) {
+        modelPng.src = window.electronAPI.getTempImagePath();
+        pngPreviewContainer.classList.remove('hidden');
     }
 }
 

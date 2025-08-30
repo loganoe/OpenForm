@@ -56,7 +56,7 @@ ipcMain.handle('generate-scad', async (event, description) => {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     
     // TODO: Move this to environment variables in production
-    const API_KEY = 'Ur_Api_key';
+    const API_KEY = 'AIzaSyAtSsiOGD-swYtxrgxjSlMbvYikUwF915Y';
     const genAI = new GoogleGenerativeAI(API_KEY);
     
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
@@ -64,7 +64,8 @@ ipcMain.handle('generate-scad', async (event, description) => {
     const prompt = `Generate OpenSCAD code for the following 3D model description. 
     Only return valid OpenSCAD code without any markdown formatting or explanation.
     Make sure the code is complete and can be directly executed in OpenSCAD.
-    Add appropriate comments for clarity.
+    Add appropriate comments for clarity. Ensure that the model is cleanly designed, elements are centered when appropriate, and parts that should sit flush sit flush. 
+    Add fillets when appropriate. 
     
     Description: ${description}`;
     

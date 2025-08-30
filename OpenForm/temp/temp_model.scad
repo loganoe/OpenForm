@@ -1,48 +1,55 @@
-// Chair model
+// Cup parameters
+cup_height = 100; // Height of the cup
+cup_diameter_top = 80; // Diameter of the top of the cup
+cup_diameter_bottom = 60; // Diameter of the bottom of the cup
+wall_thickness = 2; // Thickness of the cup wall
+fillet_radius = 5; // Radius for the fillet at the bottom inside edge
 
-// Parameters
-chair_width = 40;  // Width of the chair
-chair_depth = 40;  // Depth of the chair
-chair_height = 80; // Height of the chair
-seat_height = 45;  // Height of the seat
-leg_thickness = 5; // Thickness of the legs
-back_height = 35;  // Height of the backrest
-back_thickness = 3; // Thickness of the backrest
+// Difference between top and bottom radius
+radius_diff = (cup_diameter_top - cup_diameter_bottom) / 2;
 
-// Module for a single leg
-module leg() {
-    cube([leg_thickness, leg_thickness, seat_height]);
-}
-
-// Module for the seat
-module seat() {
-    difference() {
-        cube([chair_width, chair_depth, leg_thickness]);
-        translate([leg_thickness, leg_thickness, -0.1])
-        cube([chair_width-2*leg_thickness, chair_depth-2*leg_thickness, leg_thickness+0.2]);
+// Outer cup
+module outer_cup() {
+    hull() {
+        translate([0,0,0])
+        circle(d=cup_diameter_bottom);
+        
+        translate([0,0,cup_height])
+        circle(d=cup_diameter_top);
     }
 }
 
-// Module for the backrest
-module backrest() {
-    translate([0, chair_depth - back_thickness, seat_height])
-    cube([chair_width, back_thickness, back_height]);
+// Inner cup (hollowed out)
+module inner_cup() {
+    hull() {
+        translate([0,0,0])
+        circle(d=cup_diameter_bottom - 2*wall_thickness);
+        
+        translate([0,0,cup_height - wall_thickness]) //reduce height of inner so top edge has thickness
+        circle(d=cup_diameter_top - 2*wall_thickness);
+    }
 }
 
-// Main chair module
-module chair() {
-    // Legs
-    translate([0, 0, 0]) leg();
-    translate([chair_width - leg_thickness, 0, 0]) leg();
-    translate([0, chair_depth - leg_thickness, 0]) leg();
-    translate([chair_width - leg_thickness, chair_depth - leg_thickness, 0]) leg();
+// Fillet module - Create a torus to cut away for the fillet
+module bottom_fillet() {
+    translate([0,0,wall_thickness])
+    rotate([90,0,0])
+    difference(){
+        cylinder(h=wall_thickness, d=cup_diameter_bottom - (2*wall_thickness));
 
-    // Seat
-    translate([0, 0, seat_height - leg_thickness]) seat();
+        translate([0,0,-fillet_radius])
+        rotate([0,0,0])
+        rotate_extrude(angle = 360)
+            translate([((cup_diameter_bottom - (2*wall_thickness))/2) - fillet_radius,0,0])
+                circle(r = fillet_radius);
+    }
 
-    // Backrest
-    backrest();
 }
 
-// Render the chair
-chair();
+difference() {
+    outer_cup();
+    inner_cup();
+   
+    bottom_fillet();
+
+}
