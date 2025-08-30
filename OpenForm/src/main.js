@@ -56,7 +56,7 @@ ipcMain.handle('generate-scad', async (event, description) => {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     
     // TODO: Move this to environment variables in production
-    const API_KEY = 'AIzaSyAtSsiOGD-swYtxrgxjSlMbvYikUwF915Y';
+    const API_KEY = 'AIzaSyAtSsiOGD-swYtxrgxjSlMbvYikUwF915Y'; // This API key has been disabled for security reasons, replace it with your own Gemini API key. 
     const genAI = new GoogleGenerativeAI(API_KEY);
     
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
